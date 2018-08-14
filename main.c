@@ -73,6 +73,13 @@ void eval(int instruction) {
     ip_incr(2);
     break;
   }
+  case GET: {
+    int register_value = registers[instructions[ip() + 1]];
+    sp_incr(1);
+    stack[sp()] = register_value;
+    ip_incr(1);
+    break;
+  }
   default:
     printf("unknown: %d\n", instruction);
     break;
@@ -103,6 +110,9 @@ int get_instruction(char *inst) {
   }
   if (strcmp(inst, "SET") == 0) {
     return SET;
+  }
+  if (strcmp(inst, "GET") == 0) {
+    return GET;
   }
   if (strcmp(inst, "A") == 0) {
     return A;
