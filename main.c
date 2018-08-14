@@ -85,6 +85,16 @@ void eval(int instruction) {
     ip_incr(1);
     break;
   }
+  case INC: {
+    registers[instructions[ip() + 1]]++;
+    ip_incr(1);
+    break;
+  }
+  case DEC: {
+    registers[instructions[ip() + 1]]--;
+    ip_incr(1);
+    break;
+  }
   default:
     printf("unknown: %d\n", instruction);
     break;
@@ -122,7 +132,12 @@ int get_instruction(char *inst) {
   if (strcmp(inst, "SAV") == 0) {
     return SAV;
   }
-
+  if (strcmp(inst, "INC") == 0) {
+    return INC;
+  }
+  if (strcmp(inst, "DEC") == 0) {
+    return INC;
+  }
   if (strcmp(inst, "A") == 0) {
     return A;
   }

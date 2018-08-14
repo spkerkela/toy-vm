@@ -10,7 +10,11 @@ typedef enum {
   SET,
   GET,
   SAV,
-  PRN
+  PRN,
+  INC,
+  DEC,
+  IF,
+  IFN
 } InstructionSet;
 typedef enum { A, B, C, D, E, F, SP, IP, NUM_OF_REGISTERS } Registers;
 #endif
