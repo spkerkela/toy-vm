@@ -11,6 +11,7 @@ int stack[256];
 int registers[NUM_OF_REGISTERS];
 
 bool running = true;
+bool jump = false;
 
 void sp_incr(int i) { registers[SP] += i; }
 void ip_incr(int i) { registers[IP] += i; }
@@ -21,6 +22,7 @@ int ip() { return registers[IP]; }
 int fetch() { return instructions[ip()]; }
 
 void eval(int instruction) {
+  jump = false;
   switch (instruction) {
   case HLT:
     running = false;
@@ -95,6 +97,25 @@ void eval(int instruction) {
     ip_incr(1);
     break;
   }
+  case IF: {
+    if (registers[instructions[ip() + 1]] == instructions[ip() + 2]) {
+      jump = true;
+      registers[IP] = instructions[ip() + 3];
+    } else {
+      ip_incr(3);
+    }
+    break;
+  }
+  case IFN: {
+    if (registers[instructions[ip() + 1]] != instructions[ip() + 2]) {
+      jump = true;
+      registers[IP] = instructions[ip() + 3];
+    } else {
+      ip_incr(3);
+    }
+
+    break;
+  }
   default:
     printf("unknown: %d\n", instruction);
     break;
@@ -137,6 +158,12 @@ int get_instruction(char *inst) {
   }
   if (strcmp(inst, "DEC") == 0) {
     return INC;
+  }
+  if (strcmp(inst, "IF") == 0) {
+    return IF;
+  }
+  if (strcmp(inst, "IFN") == 0) {
+    return IFN;
   }
   if (strcmp(inst, "A") == 0) {
     return A;
@@ -205,7 +232,9 @@ int main(int argc, char *argv[]) {
 
   while (running && ip() < instruction_count) {
     eval(fetch());
-    ip_incr(1);
+    if (!jump) {
+      ip_incr(1);
+    }
   }
   fclose(file);
   return 0;
