@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int *instructions;
 int instruction_count = 0;
@@ -11,16 +12,13 @@ int registers[NUM_OF_REGISTERS];
 
 bool running = true;
 
-void stack_pointer_incr(int i) { registers[SP] += i; }
-void instruction_pointer_incr(int i) { registers[IP] += i; }
+void sp_incr(int i) { registers[SP] += i; }
+void ip_incr(int i) { registers[IP] += i; }
 
-int stack_pointer() { return registers[SP]; }
-int instruction_pointer() { return registers[IP]; }
+int sp() { return registers[SP]; }
+int ip() { return registers[IP]; }
 
-int fetch() {
-  int instruction = instructions[instruction_pointer()];
-  return instruction;
-}
+int fetch() { return instructions[ip()]; }
 
 void eval(int instruction) {
   switch (instruction) {
@@ -28,58 +26,109 @@ void eval(int instruction) {
     running = false;
     break;
   case PSH:
-    stack_pointer_incr(1);
-    instruction_pointer_incr(1);
-    stack[stack_pointer()] = instructions[instruction_pointer()];
+    sp_incr(1);
+    ip_incr(1);
+    stack[sp()] = instructions[ip()];
     break;
   case POP: {
-    int value = stack[stack_pointer()];
-    stack_pointer_incr(-1);
-    printf("%d\n", value);
+    sp_incr(-1);
+    break;
+  }
+  case PRN: {
+    printf("%d\n", stack[sp()]);
     break;
   }
   case ADD: {
-    int a = stack[stack_pointer()];
-    stack_pointer_incr(-1);
-    int b = stack[stack_pointer()];
-    stack_pointer_incr(-1);
+    int a = stack[sp()];
+    sp_incr(-1);
+    int b = stack[sp()];
+    sp_incr(-1);
     int res = a + b;
-    stack_pointer_incr(1);
-    stack[stack_pointer()] = res;
+    sp_incr(1);
+    stack[sp()] = res;
     break;
   }
   case MUL: {
-    int a = stack[stack_pointer()];
-    stack_pointer_incr(-1);
-    int b = stack[stack_pointer()];
-    stack_pointer_incr(-1);
+    int a = stack[sp()];
+    sp_incr(-1);
+    int b = stack[sp()];
+    sp_incr(-1);
     int res = a * b;
-    stack_pointer_incr(1);
-    stack[stack_pointer()] = res;
+    sp_incr(1);
+    stack[sp()] = res;
     break;
   }
   case DIV: {
-    int a = stack[stack_pointer()];
-    stack_pointer_incr(-1);
-    int b = stack[stack_pointer()];
-    stack_pointer_incr(-1);
+    int a = stack[sp()];
+    sp_incr(-1);
+    int b = stack[sp()];
+    sp_incr(-1);
     int res = b / a;
-    stack_pointer_incr(1);
-    stack[stack_pointer()] = res;
+    sp_incr(1);
+    stack[sp()] = res;
     break;
   }
   case SET: {
-    instruction_pointer_incr(1);
-    int reg = instructions[instruction_pointer()];
-    instruction_pointer_incr(1);
-    int value = instructions[instruction_pointer()];
-    registers[reg] = value;
+    registers[instructions[ip() + 1]] = instructions[ip() + 2];
+    ip_incr(2);
     break;
   }
   default:
     printf("unknown: %d\n", instruction);
     break;
   }
+}
+
+int get_instruction(char *inst) {
+  if (strcmp(inst, "PRN") == 0) {
+    return PRN;
+  }
+  if (strcmp(inst, "PSH") == 0) {
+    return PSH;
+  }
+  if (strcmp(inst, "POP") == 0) {
+    return POP;
+  }
+  if (strcmp(inst, "MUL") == 0) {
+    return MUL;
+  }
+  if (strcmp(inst, "HLT") == 0) {
+    return HLT;
+  }
+  if (strcmp(inst, "ADD") == 0) {
+    return ADD;
+  }
+  if (strcmp(inst, "DIV") == 0) {
+    return DIV;
+  }
+  if (strcmp(inst, "SET") == 0) {
+    return SET;
+  }
+  if (strcmp(inst, "A") == 0) {
+    return A;
+  }
+  if (strcmp(inst, "B") == 0) {
+    return B;
+  }
+  if (strcmp(inst, "C") == 0) {
+    return C;
+  }
+  if (strcmp(inst, "D") == 0) {
+    return D;
+  }
+  if (strcmp(inst, "E") == 0) {
+    return E;
+  }
+  if (strcmp(inst, "F") == 0) {
+    return F;
+  }
+  if (strcmp(inst, "SP") == 0) {
+    return SP;
+  }
+  if (strcmp(inst, "IP") == 0) {
+    return IP;
+  }
+  return atoi(inst);
 }
 
 int main(int argc, char *argv[]) {
@@ -96,33 +145,34 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Can't open input file!\n");
     exit(1);
   }
-  // read the "binary" file
   int instruction_space = 4;
   instructions =
       malloc(sizeof(*instructions) * instruction_space); // 4 instructions
 
-  int num;
+  char inst[50];
   int i = 0;
-  while (fscanf(file, "%d", &num) > 0) {
-    instructions[i] = num;
+  int instruction_decoded = 0;
+  while (fscanf(file, "%s", inst) > 0) {
+    instruction_decoded = get_instruction(inst);
+    instructions[i] = instruction_decoded;
     i++;
     if (i >= instruction_space) {
-      instruction_space *= 2;
-      instructions =
-          realloc(instructions,
-                  sizeof(*instructions) * instruction_space); // double size
+      instruction_space = instruction_space * 2;
+      int *tmp =
+          realloc(instructions, sizeof(*instructions) * instruction_space);
+      if (tmp == NULL) {
+      } else {
+        instructions = tmp;
+      }
     }
   }
 
-  // set 'instruction_count' to number of instructions read
   instruction_count = i;
 
-  // close the file
-  fclose(file);
-
-  while (running && instruction_pointer() < instruction_count) {
+  while (running && ip() < instruction_count) {
     eval(fetch());
-    instruction_pointer_incr(1);
+    ip_incr(1);
   }
+  fclose(file);
   return 0;
 }
