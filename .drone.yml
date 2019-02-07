@@ -1,0 +1,18 @@
+kind: pipeline
+name: default
+steps:
+  - name: build
+    image: rsmmr/clang
+    commands:
+      - apt-get install zip -y
+      - make
+      - zip vm.zip vm
+  - name: gitea_release
+    image: plugins/gitea-release
+    settings:
+      api_key:
+        from_secret: toy_vm_key
+      base_url: 'https://git.spkerkela.com'
+      files: vm.zip
+    when:
+      event: tag
